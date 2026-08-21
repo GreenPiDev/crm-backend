@@ -14,6 +14,7 @@ async function bootstrap() {
   await app.register(multipart, {
     limits: { fileSize: 10 * 1024 * 1024 },
   });
+  app.enableCors();
   app.setGlobalPrefix('api/v1');
   const port = process.env.PORT ?? 3001;
   await app.listen(port, '0.0.0.0');
