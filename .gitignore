@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.DS_Store
+.claude
+.agents
+.windsurf
+skills-lock.json
+
+# Keep environment variables out of version control
+.env
+.env.test
+.env.local
+
+/generated/prisma
