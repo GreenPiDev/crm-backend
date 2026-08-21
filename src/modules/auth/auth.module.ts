@@ -3,6 +3,7 @@ import { ThrottlerModule, seconds } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
+import { TenantModulesModule } from '../tenant-modules/tenant-modules.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TokenService } from './token.service';
         limit: process.env.NODE_ENV === 'test' ? 1000 : 10,
       },
     ]),
+    TenantModulesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, TokenService],

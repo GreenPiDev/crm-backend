@@ -3,12 +3,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Role } from '@prisma/client';
+import type { ModuleKey } from '../../common/modules-catalog/module-catalog';
 
 export interface TokenPayload {
   sub: string;
   tenantId: string;
   role: Role;
   email: string;
+  enabledModules: ModuleKey[];
 }
 
 export interface TokenPair {

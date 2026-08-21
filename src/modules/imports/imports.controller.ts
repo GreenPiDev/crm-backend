@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequiresModule } from '../../common/decorators/requires-module.decorator';
 import { ImportsService } from './imports.service';
 
 async function readMultipart(
@@ -52,6 +53,7 @@ export class ImportsController {
   }
 
   @Roles('OWNER', 'ADMIN', 'SALES')
+  @RequiresModule('accounts')
   @Post('accounts')
   async importAccounts(@Req() req: FastifyRequest) {
     const { buffer, mapping } = await readMultipart(req);
@@ -62,6 +64,7 @@ export class ImportsController {
   }
 
   @Roles('OWNER', 'ADMIN', 'SALES')
+  @RequiresModule('contacts')
   @Post('contacts')
   async importContacts(@Req() req: FastifyRequest) {
     const { buffer, mapping } = await readMultipart(req);
@@ -71,6 +74,7 @@ export class ImportsController {
     return this.importsService.importContacts(buffer, mapping);
   }
 
+  @RequiresModule('accounts')
   @Get('accounts/export')
   async exportAccounts(@Res() res: FastifyReply) {
     const buffer = await this.importsService.exportAccounts();
@@ -83,6 +87,7 @@ export class ImportsController {
       .send(buffer);
   }
 
+  @RequiresModule('contacts')
   @Get('contacts/export')
   async exportContacts(@Res() res: FastifyReply) {
     const buffer = await this.importsService.exportContacts();

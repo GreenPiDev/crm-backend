@@ -13,9 +13,11 @@ import { UsersModule } from './modules/users/users.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { ImportsModule } from './modules/imports/imports.module';
+import { TenantModulesModule } from './modules/tenant-modules/tenant-modules.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ModuleEntitlementGuard } from './common/guards/module-entitlement.guard';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 
 @Module({
@@ -35,12 +37,14 @@ import { TenantContextInterceptor } from './common/interceptors/tenant-context.i
     AccountsModule,
     ContactsModule,
     ImportsModule,
+    TenantModulesModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: ModuleEntitlementGuard },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
   ],
 })

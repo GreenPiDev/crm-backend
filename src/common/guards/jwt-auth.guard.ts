@@ -16,6 +16,7 @@ interface AccessTokenPayload {
   tenantId: string;
   role: AuthenticatedUser['role'];
   email: string;
+  enabledModules: AuthenticatedUser['enabledModules'];
 }
 
 @Injectable()
@@ -55,6 +56,7 @@ export class JwtAuthGuard implements CanActivate {
         tenantId: payload.tenantId,
         role: payload.role,
         email: payload.email,
+        enabledModules: payload.enabledModules,
       };
       return true;
     } catch {

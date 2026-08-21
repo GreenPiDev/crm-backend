@@ -34,6 +34,9 @@ describe('Auth (e2e)', () => {
       expect(response.status).toBe(201);
       expect(response.body.user.role).toBe('OWNER');
       expect(response.body.user.email).toBe('ayse@acme.test');
+      expect(response.body.user.enabledModules).toEqual(
+        expect.arrayContaining(['accounts', 'contacts']),
+      );
       expect(typeof response.body.tokens.accessToken).toBe('string');
       expect(typeof response.body.tokens.refreshToken).toBe('string');
     });

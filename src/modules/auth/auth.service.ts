@@ -14,6 +14,8 @@ import {
 import { TenantContext } from '../../common/tenant/tenant-context';
 import { slugify } from '../../common/utils/slug';
 import { TokenService, TokenPair } from './token.service';
+import { TenantModulesService } from '../tenant-modules/tenant-modules.service';
+import { ModuleKey } from '../../common/modules-catalog/module-catalog';
 import type { RegisterDto } from './dto/register.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
@@ -25,6 +27,7 @@ export interface AuthResult {
     email: string;
     fullName: string;
     role: string;
+    enabledModules: ModuleKey[];
   };
   tokens: TokenPair;
 }
@@ -35,6 +38,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     @Inject(TENANT_PRISMA) private readonly tenantPrisma: TenantPrismaClient,
     private readonly tokenService: TokenService,
+    private readonly tenantModulesService: TenantModulesService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResult> {
@@ -61,10 +65,11 @@ export class AuthService {
           role: 'OWNER',
         },
       });
+      await this.tenantModulesService.seedDefaultsForNewTenant(tx, tenant.id);
       return { tenant, user };
     });
 
-    const tokens = await this.issueAndStoreTokens(
+    const { tokens, enabledModules } = await this.issueAndStoreTokens(
       tenant.id,
       user.id,
       user.role,
@@ -78,6 +83,7 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        enabledModules,
       },
       tokens,
     };
@@ -106,7 +112,7 @@ export class AuthService {
       });
     });
 
-    const tokens = await this.issueAndStoreTokens(
+    const { tokens, enabledModules } = await this.issueAndStoreTokens(
       user.tenantId,
       user.id,
       user.role,
@@ -120,6 +126,7 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        enabledModules,
       },
       tokens,
     };
@@ -158,12 +165,13 @@ export class AuthService {
         data: { revokedAt: new Date() },
       });
 
-      return this.issueAndStoreTokens(
+      const { tokens } = await this.issueAndStoreTokens(
         user.tenantId,
         user.id,
         user.role,
         user.email,
       );
+      return tokens;
     });
   }
 
@@ -215,12 +223,17 @@ export class AuthService {
     userId: string,
     role: Role,
     email: string,
-  ): Promise<TokenPair> {
+  ): Promise<{ tokens: TokenPair; enabledModules: ModuleKey[] }> {
+    const enabledModules = await TenantContext.run({ tenantId }, () =>
+      this.tenantModulesService.getEnabledModuleKeys(),
+    );
+
     const tokens = await this.tokenService.issueTokenPair({
       sub: userId,
       tenantId,
       role,
       email,
+      enabledModules,
     });
 
     await TenantContext.run({ tenantId }, async () => {
@@ -234,7 +247,7 @@ export class AuthService {
       });
     });
 
-    return tokens;
+    return { tokens, enabledModules };
   }
 
   private async generateUniqueSlug(tenantName: string): Promise<string> {
