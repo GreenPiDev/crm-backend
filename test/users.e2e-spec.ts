@@ -52,6 +52,53 @@ describe('Users (e2e)', () => {
     owner = await registerTenant(app);
   });
 
+  describe('GET /users/me', () => {
+    it('kimlik doğrulama olmadan 401 döner', async () => {
+      const response = await request(app.getHttpServer()).get(
+        '/api/v1/users/me',
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it('geçerli tokenla mevcut kullanıcının güncel bilgilerini döner', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${owner.accessToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        id: owner.userId,
+        tenantId: owner.tenantId,
+        email: owner.email,
+        role: 'OWNER',
+      });
+      expect(response.body.enabledModules).toEqual(
+        expect.arrayContaining(['accounts', 'contacts']),
+      );
+    });
+
+    it('rolü değiştikten sonra güncel rolü döner', async () => {
+      const salesUser = await createSalesUser(
+        owner.tenantId,
+        'rol-guncel@acme.test',
+        'sifre-1234',
+      );
+      const token = await loginAs(app, salesUser.email, 'sifre-1234');
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/users/${salesUser.id}/role`)
+        .set('Authorization', `Bearer ${owner.accessToken}`)
+        .send({ role: 'ADMIN' });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.role).toBe('ADMIN');
+    });
+  });
+
   describe('GET /users', () => {
     it('kimlik doğrulama olmadan 401 döner', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/users');

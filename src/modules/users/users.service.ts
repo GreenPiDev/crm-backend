@@ -13,6 +13,7 @@ import {
   TenantPrismaClient,
 } from '../../common/prisma/tenant-prisma.provider';
 import { MailService } from '../mail/mail.service';
+import { TenantModulesService } from '../tenant-modules/tenant-modules.service';
 import type { InviteUserDto } from './dto/invite-user.dto';
 import type { AcceptInviteDto } from './dto/accept-invite.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
@@ -25,7 +26,23 @@ export class UsersService {
     private readonly prisma: PrismaService,
     @Inject(TENANT_PRISMA) private readonly tenantPrisma: TenantPrismaClient,
     private readonly mailService: MailService,
+    private readonly tenantModulesService: TenantModulesService,
   ) {}
+
+  async getMe(userId: string, tenantId: string) {
+    const user = await this.tenantPrisma.user.findFirst({
+      where: { id: userId },
+      select: { id: true, email: true, fullName: true, role: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const enabledModules =
+      await this.tenantModulesService.getEnabledModuleKeys();
+
+    return { ...user, tenantId, enabledModules };
+  }
 
   async list(page: number, pageSize: number) {
     const [data, total] = await Promise.all([

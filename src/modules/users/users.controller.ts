@@ -26,6 +26,11 @@ export class UsersController {
     private readonly tenantsService: TenantsService,
   ) {}
 
+  @Get('me')
+  getMe(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getMe(user.id, user.tenantId);
+  }
+
   @Get()
   list(@Query('page') page = '1', @Query('pageSize') pageSize = '25') {
     return this.usersService.list(Number(page), Number(pageSize));
