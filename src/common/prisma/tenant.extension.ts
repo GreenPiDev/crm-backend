@@ -7,6 +7,10 @@ import { TenantContext } from '../tenant/tenant-context';
  */
 const TENANT_EXCLUDED_MODELS = new Set(['Tenant']);
 
+// deletedAt alanı olan modeller: okuma sorgularında silinmişler otomatik
+// gizlenir, delete/deleteMany çağrıları update'e çevrilerek yumuşak silinir.
+const SOFT_DELETE_MODELS = new Set(['Account', 'Contact']);
+
 const READ_OPS = new Set([
   'findFirst',
   'findFirstOrThrow',
@@ -41,9 +45,48 @@ export function tenantExtension() {
             }
 
             const typedArgs = args as Record<string, unknown>;
+            const isSoftDelete = SOFT_DELETE_MODELS.has(model);
+
+            if (
+              isSoftDelete &&
+              (operation === 'delete' || operation === 'deleteMany')
+            ) {
+              const where = { ...(typedArgs.where as object), tenantId };
+              const modelKey = model.charAt(0).toLowerCase() + model.slice(1);
+              const modelClient = (
+                client as unknown as Record<
+                  string,
+                  {
+                    update: (args: unknown) => Promise<unknown>;
+                    updateMany: (args: unknown) => Promise<unknown>;
+                  }
+                >
+              )[modelKey];
+              if (operation === 'delete') {
+                return modelClient.update({
+                  where,
+                  data: { deletedAt: new Date() },
+                });
+              }
+              return modelClient.updateMany({
+                where,
+                data: { deletedAt: new Date() },
+              });
+            }
 
             if (READ_OPS.has(operation) || WHERE_WRITE_OPS.has(operation)) {
-              typedArgs.where = { ...(typedArgs.where as object), tenantId };
+              const where = {
+                ...(typedArgs.where as object),
+                tenantId,
+              } as Record<string, unknown>;
+              if (
+                isSoftDelete &&
+                READ_OPS.has(operation) &&
+                where.deletedAt === undefined
+              ) {
+                where.deletedAt = null;
+              }
+              typedArgs.where = where;
             } else if (
               operation === 'findUnique' ||
               operation === 'findUniqueOrThrow'

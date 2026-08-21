@@ -10,6 +10,9 @@ import { MailModule } from './modules/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
+import { AccountsModule } from './modules/accounts/accounts.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
+import { ImportsModule } from './modules/imports/imports.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -29,6 +32,9 @@ import { TenantContextInterceptor } from './common/interceptors/tenant-context.i
     AuthModule,
     TenantsModule,
     UsersModule,
+    AccountsModule,
+    ContactsModule,
+    ImportsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

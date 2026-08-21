@@ -55,4 +55,65 @@ describe('Kiracı izolasyonu (e2e)', () => {
 
     expect(response.status).toBe(404);
   });
+
+  it('A kiracısı, B kiracısının firma (account) kaydına id ile eriştiğinde 404 alır', async () => {
+    const tenantA = await registerTenant(app, { tenantName: 'A Firması' });
+    const tenantB = await registerTenant(app, { tenantName: 'B Firması' });
+    const accountB = await testPrisma.account.create({
+      data: { tenantId: tenantB.tenantId, name: 'B Firmasının Müşterisi' },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/accounts/${accountB.id}`)
+      .set('Authorization', `Bearer ${tenantA.accessToken}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('A kiracısının firma listesinde B kiracısının firmaları görünmez', async () => {
+    const tenantA = await registerTenant(app, { tenantName: 'A Firması' });
+    const tenantB = await registerTenant(app, { tenantName: 'B Firması' });
+    await testPrisma.account.create({
+      data: { tenantId: tenantA.tenantId, name: 'A Firmasının Müşterisi' },
+    });
+    await testPrisma.account.create({
+      data: { tenantId: tenantB.tenantId, name: 'B Firmasının Müşterisi' },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/accounts')
+      .set('Authorization', `Bearer ${tenantA.accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].name).toBe('A Firmasının Müşterisi');
+  });
+
+  it('A kiracısı, B kiracısının kişi (contact) kaydına id ile eriştiğinde 404 alır', async () => {
+    const tenantA = await registerTenant(app, { tenantName: 'A Firması' });
+    const tenantB = await registerTenant(app, { tenantName: 'B Firması' });
+    const contactB = await testPrisma.contact.create({
+      data: { tenantId: tenantB.tenantId, firstName: 'B', lastName: 'Kişisi' },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/contacts/${contactB.id}`)
+      .set('Authorization', `Bearer ${tenantA.accessToken}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('A kiracısı, B kiracısının firmasını silemez (404)', async () => {
+    const tenantA = await registerTenant(app, { tenantName: 'A Firması' });
+    const tenantB = await registerTenant(app, { tenantName: 'B Firması' });
+    const accountB = await testPrisma.account.create({
+      data: { tenantId: tenantB.tenantId, name: 'B Firmasının Müşterisi' },
+    });
+
+    const response = await request(app.getHttpServer())
+      .delete(`/api/v1/accounts/${accountB.id}`)
+      .set('Authorization', `Bearer ${tenantA.accessToken}`);
+
+    expect(response.status).toBe(404);
+  });
 });
