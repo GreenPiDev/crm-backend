@@ -12,6 +12,10 @@ model Tenant {
   slug      String   @unique
   plan      String   @default("trial")
   createdAt DateTime @default(now())
+
+  users         User[]
+  refreshTokens RefreshToken[]
+  invites       UserInvite[]
 }
 
 model User {
@@ -24,7 +28,11 @@ model User {
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
 
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  refreshTokens RefreshToken[]
+
   @@unique([tenantId, email])
+  @@index([tenantId])
 }
 
 enum Role {
@@ -32,4 +40,36 @@ enum Role {
   ADMIN
   SALES
   VIEWER
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tenantId  String
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId])
+}
+
+model UserInvite {
+  id         String    @id @default(cuid())
+  tenantId   String
+  email      String
+  fullName   String
+  role       Role      @default(SALES)
+  tokenHash  String
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
 }
